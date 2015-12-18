@@ -1,16 +1,19 @@
 /* Cracking the Coding Interview
  * Chapter: 1
- * Problem: 4
- * "You have two numbers represented by a linked list, where each node contains a single digit
-  The digits are stored in reverse order, such that the 1’s digit is at the head of the list
-  Write a function that adds the two numbers and returns the sum as a linked list
-	EXAMPLE 
-	Input: (3 -> 1 -> 5) + (5 -> 9 -> 2)
-	Output: 8 -> 0 -> 8"
+ * Problem: 5
+ * "Given a circular linked list, implement an algorithm which returns node at the beginning of the loop
+	DEFINITION
+	Circular linked list: A (corrupt) linked list in which a node’s next pointer points to an 
+	earlier node, so as to make a loop in the linked list
+	EXAMPLE
+	input: A -> B -> C -> D -> E -> C [the same C as earlier]
+	output: C"
  * Author : Ronny Macmaster
  * Date : 12/17/15                                       */
 
 #include <iostream>
+#include <stdexcept>
+#include <map>
 
 using namespace std;
 
@@ -22,16 +25,39 @@ struct linked_list{
 void print(struct linked_list *head);
 void empty(struct linked_list *head);
 
-/* Adds the two numbers together */
-struct linked_list *add(struct linked_list *num1, struct linked_list *num2);
+struct linked_list *find_head(struct linked_list *list){
+	map<struct linked_list *, bool> m; //map of access flags
+	while(list != NULL){
+		try{
+			m.at(list);
+			return list;
+		}
+		catch(out_of_range &oor){
+			m[list] = true;
+			list = list->next;
+		}
+	}
+	return NULL; // Not a Circular list!!
+}
 
 int main(){
 	int data1[3] ={0,1,2};
-	int data2[3] ={0,1,2};
-	struct linked_list *current, *prev, *num1, *num2, *sum;
+	int data2[3] ={5,4,3};
+	int data3[3] ={9,6,8};
+	struct linked_list *current, *prev, *list1, *list2, *list3;
 	
-	// build first number
-	current = num1 = new struct linked_list;
+	// build 2nd sublist
+	current = list2 = new struct linked_list;
+	for(int i = 0; i < 3; i++){
+		current->data = data2[i];
+		current->next = new struct linked_list;
+		prev = current;
+		current = current->next;
+	}
+	delete prev->next; prev->next = NULL;
+	
+	// build 1st sublist
+	current = list1 = new struct linked_list;
 	for(int i = 0; i < 3; i++){
 		current->data = data1[i];
 		current->next = new struct linked_list;
@@ -39,65 +65,38 @@ int main(){
 		current = current->next;
 	}
 	delete prev->next; prev->next = NULL;
+	
+	// chain 2nd sublist to 1st sublist
+	// 0->1->2->5->4->3->NULL
+	prev->next = list2;
 		
-	// build second number
-	current = num2 = new struct linked_list;
+	// build 3rd sublist
+	current = list3 = new struct linked_list;
 	for(int i = 0; i < 3; i++){
-		current->data = data2[i];
+		current->data = data3[i];
 		current->next = new struct linked_list;
 		prev = current;
-		current = current->next;
-	}
-	delete prev->next; prev->next = NULL;	
-	
-	// Print Results	
-	cout << "Before add (num1): "; print(num1);
-	cout << "Before add (num2): "; print(num2);
-	
-	sum = add(num1, num2);
-	
-	cout << "After add (num1): "; print(num1);
-	cout << "After add (num2): "; print(num2);
-	
-	cout << "Sum: "; print(sum);
-	
-	// Empty All Numbers
-	empty(num1), empty(num2), empty(sum);
-	
-}
-
-struct linked_list *add(struct linked_list *num1, struct linked_list *num2){
-	struct linked_list *sum = NULL; // empty represents 0;
-	struct linked_list *current, *prev;
-	int total = 0, digit = 1;
-	
-	// build total
-	while((num1 != NULL) || (num2 != NULL)){
-		if(num1 != NULL){
-			total += num1->data*digit;
-			num1 = num1->next;
-		}
-		if(num2 != NULL){
-			total += num2->data*digit;
-			num2 = num2->next;
-		}
-		digit *= 10;
-	}
-	
-	if(total == 0)
-		return sum;
-	
-	current = sum = new struct linked_list;
-	while(total > 0){
-		current->data = total%10;
-		current->next = new struct linked_list;
-		prev = current;
-		total /= 10;
 		current = current->next;
 	}
 	delete prev->next; prev->next = NULL;
 	
-	return sum;	
+	//chain 3rd sublist to 1st sublist
+	// 9->6->8->0->1->2->5->4->3->NULL
+	prev->next = list1;
+	//chain end to middle to form a ring
+	// 9->6->8->0->1->2->5->4->3  ->  0->1->2->5->4->3->0->...
+	current = list3;
+	while(current != NULL){
+		prev = current;
+		current = current->next;
+	}
+	prev->next = list1;
+	
+	// Print Results	
+	cout << "Result : " << find_head(list3)->data << endl;
+	// Empty All Numbers
+	empty(list3);
+	
 }
 
 void print(struct linked_list *head){
@@ -117,25 +116,3 @@ void empty(struct linked_list *head){
 		delete prev;
 	}
 }
-
-/* Recursion Sketching
-struct linked_list *plu(struct linked_list *num1, struct linked_list *num2){
-	
-	struct linked_list *sum = NULL; // empty represents 0;
-	if((num1 == NULL) && (num2 == NULL))
-		return sum;
-	else{
-		sum = new struct linked_list;
-		sum->data = 0;
-		if(num1 != NULL){
-			sum->data += num1->data;
-			num1 = num1->next;
-		}
-		if(num2 != NULL){
-			sum->data += num2->data;
-			num2 = num2->next;
-		}
-		sum->next = add(num1, num2);
-		return sum;
-	}
-}*/
